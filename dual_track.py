@@ -3209,10 +3209,10 @@ def run_cleanup(args):
                 "--skip-publish-check.")
         problems = []
         for md in deliverables:
-            rel = md.relative_to(Path(toplevel))
-            if not _git(out_dir, f"ls-files -- '{rel}'"):
+            # git runs with cwd=out_dir, so pathspecs are relative to out_dir
+            if not _git(out_dir, f"ls-files -- '{md.name}'"):
                 problems.append(f"  NOT COMMITTED: {md.name}")
-            elif _git(out_dir, f"status --porcelain -- '{rel}'"):
+            elif _git(out_dir, f"status --porcelain -- '{md.name}'"):
                 problems.append(f"  MODIFIED SINCE COMMIT: {md.name}")
         upstream = _git(out_dir, "rev-parse --abbrev-ref --symbolic-full-name @{u}")
         if not upstream:
