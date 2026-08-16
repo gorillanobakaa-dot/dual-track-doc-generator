@@ -4,7 +4,7 @@
 **Canonical copy**: `~/Documents/ai-tooling/opencode/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py`  
 **Vault backup**: `~/Documents/Scripts.For.Work/Scripts.Vault.Do.Not.Delete/doc-tooling/dual_track.py`  
 **Symlink on PATH**: `~/.local/bin/dual-track` → canonical copy  
-**Current version**: 3225 lines · fixed 2026-08-16 by Bob (IBM)  
+**Current version**: 3283 lines · fixed 2026-08-16 by Bob (IBM) · (header previously said 3225 — that was the 08:06 draft's count)  
 **Language**: Python 3 · zero dependencies (stdlib only for core operation)
 
 ---
@@ -297,7 +297,8 @@ every assessment involves inference."*
 
 ## Operational Copies on This Machine
 
-All three copies are identical as of 2026-08-16:
+All three copies are identical as of 2026-08-16 (re-verified by `sha256sum` after the
+vault copy was found holding the 08:06 draft and re-synced the same evening):
 
 | Copy | Path | Role |
 |------|------|------|
