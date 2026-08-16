@@ -1,0 +1,63 @@
+{
+  "title": "dual_track.py 2026-08-16: eight-gap overhaul, session mode, and first publication",
+  "concept": {
+    "problem_being_solved": "The generator's output on prior jobs exposed eight failure modes. The ERR-UI-004 document passed the old checks while containing self-congratulatory narration and a layman track that repeated the developer narrative in plainer words. The 2026-08-15 pfind session skipped rendering and validation entirely because `--validate` was opt-in. The tool also had no way to document work done in a directory — `code` mode reads current state, and work history lives in git and session notes, not in the source file.",
+    "approach_taken": "Close the gaps inside `dual_track.py` itself instead of relying on prompt discipline. Three structural additions (a `session` mode, `get_prior_doc_context()` injection, an idea-level separation check), one new ban list (`BANNED_SELF_CONGRAT`), one default flip (validation on unless `--no-validate`), and three prompt rewrites (`worst_case`, `known_alternatives`, `_CLAIM_SOURCING`). Then publish the folder as a git repository and run the tool on itself as its first end-to-end test.",
+    "before_state": "Before this session the script had two documentation modes (`code`, `release`), a marketing-only banned-phrase list, a syntax-only separation check, opt-in validation, and prompts that invited invented rationale and over-broad worst cases. The folder was not a git repository and existed only as one of three local copies.",
+    "after_state": "The script is 3283 lines with four modes (`code`, `session`, `release`, `precheck`) and validation on by default. The folder is a git repository with one commit (`b0b880d`) pushed to `github.com/gorillanobakaa-dot/dual-track-doc-generator`. The self-documentation in `docs-self/` is in a mixed state: the offline precheck ran (one P2 finding), the `code`-mode prep files exist, but their `.filled.json` files are thin stubs that no one rendered or validated. This session-mode run is the first fill that reaches the render-and-validate stage.",
+    "known_alternatives": "Not available in the source material. The commit message (`Add dual-track documentation generator source and self-docs`) records no rejected approaches, and the session notes name none."
+  },
+  "reference": {
+    "files_changed": [
+      {"file": "dual_track.py", "change": "added", "what_changed": "The full 3283-line generator enters version control, carrying all eight fixes made earlier today.", "why": "The overhaul described in `README.md` happened before the repository existed, so the initial commit is also the record of the fixed script."},
+      {"file": "README.md", "change": "added", "what_changed": "363 lines: usage for all four modes, the claim-sourcing system, the validation gate, and a gap-by-gap record of what was wrong before the fix.", "why": "The gap analysis is preserved so the next agent does not rediscover the eight failure modes."},
+      {"file": "docs-self/PRECHECK.md", "change": "added", "what_changed": "Offline rule-based scan result: zero P0, zero P1, one P2 (three TODO/FIXME markers in the source).", "why": "The precheck is the only part of the self-documentation that is not a model's opinion."},
+      {"file": "docs-self/PRECHECK.json", "change": "added", "what_changed": "The same precheck finding in machine-readable form.", "why": "Same run as `PRECHECK.md`."},
+      {"file": "docs-self/dual_track_developer.prep.json", "change": "added", "what_changed": "`code`-mode prep envelope for the developer track of the script's own documentation.", "why": "Self-documentation attempt started at 10:44, before the repository was created."},
+      {"file": "docs-self/dual_track_layman.prep.json", "change": "added", "what_changed": "`code`-mode prep envelope for the layman track.", "why": "Same self-documentation attempt."},
+      {"file": "docs-self/PAYLOAD.dual_track.developer.txt", "change": "added", "what_changed": "Paste-ready prompt (3441 lines) for filling the developer track in any chat window.", "why": "The `--payload` path exists for zero-quota situations."},
+      {"file": "docs-self/PAYLOAD.dual_track.layman.txt", "change": "added", "what_changed": "Paste-ready prompt (3470 lines) for the layman track.", "why": "Same `--payload` run."}
+    ],
+    "decisions_made": [
+      {"decision": "Enforce quality in code, not in prompts: ban lists, score checks, and schema enums live in `dual_track.py` where a model cannot talk its way around them.", "reason": "The README states the schema is 'the enforcement mechanism, not the prompt'.", "basis": "stated_in_input"},
+      {"decision": "Flip validation from opt-in to opt-out on every render command.", "reason": "The 2026-08-15 session proved that even the tool's own `then_run` hint let users skip the gate.", "basis": "stated_in_input"},
+      {"decision": "Rename `design_rationale` to `known_alternatives` and require 'Not available in the source material.' when rationale is undocumented.", "reason": "A model cannot recover design intent from an implementation, so the field invited invention.", "basis": "stated_in_input"},
+      {"decision": "Publish the folder to GitHub as its own repository instead of leaving it as a local copy.", "reason": "The session notes record the publication but not the motive; a public home for the tool is the plausible reason.", "basis": "model_inference"},
+      {"decision": "Leave the thin `code`-mode filled stubs in place instead of deleting them.", "reason": "The session notes cite the house rule that nothing is deleted; the stubs stay as evidence of the attempt.", "basis": "stated_in_input"}
+    ],
+    "tried_and_abandoned": [
+      {"attempt": "Filling the `code`-mode prep files (the 16:42 `.filled.json` stubs).", "why_abandoned": "The fill was minimal — most reference arrays empty, one claim source each — and no one ran render or validation on it. The session notes judge that it would not pass the script's own gate. Abandoned instead of completed; the session-mode run supersedes it as the self-documentation path."}
+    ],
+    "claimed_but_not_verified": [
+      "The README states all three local copies (canonical, vault, Second Brain) are identical as of 2026-08-16. A `sha256sum` check during documentation DISPROVED this: the canonical and Second Brain copies match (3283 lines), but the vault copy is the 08:06 snapshot (3225 lines) and never received the final 08:57 version. The README's line-count header (3225) is also stale for the same reason.",
+      "The eight fixes are described in the README but have no end-to-end test evidence in the diff; this session-mode run is the first such test.",
+      "The `~/.local/bin/dual-track` symlink is stated to point at the canonical copy; the session records do not re-verify it."
+    ],
+    "open_items": [
+      {"item": "Complete or supersede the `code`-mode self-documentation: the two `.filled.json` stubs were never brought to standard or rendered.", "priority": "medium", "blocking": "nothing currently — the session-mode documentation covers the publication"},
+      {"item": "Resolve or track the three TODO/FIXME markers that the precheck flags as its single P2 finding.", "priority": "low", "blocking": "nothing currently"},
+      {"item": "Re-sync the vault copy of `dual_track.py`: the `sha256sum` check shows it holds the 08:06 pre-final snapshot (3225 lines), not the 08:57 final (3283 lines). The owner decides whether to overwrite the vault snapshot or keep both.", "priority": "medium", "blocking": "recovery from the vault would restore a version missing the final 58 lines of today's fixes"}
+    ]
+  },
+  "verification_task": {
+    "task_title": "How to verify this work is correct",
+    "steps": [
+      {"step": 1, "action": "python3 dual_track.py precheck . --output-dir ./docs-self", "expected_result": "Exit code 0; `PRECHECK.md` reports zero P0 and zero P1 findings.", "what_failure_looks_like": "Exit code 1, or a P0/P1 row in the findings table."},
+      {"step": 2, "action": "python3 dual_track.py session render /home/gorilla/Documents/SECOND.BRAIN/Scripts/documentation/dual-track --output-dir ./docs-self --validate", "expected_result": "Two Markdown files appear (`dual-track_session_developer.md`, `dual-track_session_layman.md`) and both tracks score at least 85/100.", "what_failure_looks_like": "Exit code 2 with named failing checks, or a score below the 85 threshold."},
+      {"step": 3, "action": "git -C /home/gorilla/Documents/SECOND.BRAIN/Scripts/documentation/dual-track log --oneline origin/master", "expected_result": "The pushed history contains commit `b0b880d` and the follow-up commit with the session documentation.", "what_failure_looks_like": "`origin/master` missing the documentation commit, meaning the push never happened."},
+      {"step": 4, "action": "sha256sum ~/Documents/ai-tooling/opencode/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py ~/Documents/Scripts.For.Work/Scripts.Vault.Do.Not.Delete/doc-tooling/dual_track.py ~/Documents/SECOND.BRAIN/Scripts/documentation/dual-track/dual_track.py", "expected_result": "Three identical hashes, confirming the README's identical-copies claim.", "what_failure_looks_like": "Any hash differs — one copy missed the overhaul."}
+    ]
+  },
+  "technical_debt": [
+    {"item": "Three TODO/FIXME markers remain in `dual_track.py` (precheck finding P2-001).", "severity": "low", "recommendation": "Resolve each marker or convert it into a tracked item outside the source."},
+    {"item": "The `code`-mode filled stubs in `docs-self/` present themselves as completed fills but would fail validation.", "severity": "medium", "recommendation": "Refill them properly and render with `--validate`, or record in the repository that the session-mode documents supersede them."},
+    {"item": "Passing `.` as the session target yields an empty display name and the fallback slug `session`, because the target's basename is empty.", "severity": "low", "recommendation": "Resolve the target path before deriving the slug in `_build_session_input()` and `run_session_render()`."}
+  ],
+  "claim_sources": [
+    {"claim": "The eight-gap overhaul preceded the first commit, so the diff cannot show before/after states of the fixes", "basis": "model_inference", "evidence": null},
+    {"claim": "The 16:42 filled stubs would fail the validation gate", "basis": "stated_in_input", "evidence": "they would not pass the script's own validation gate and were never rendered"},
+    {"claim": "This session-mode run is the tool's first end-to-end test after the overhaul", "basis": "stated_in_input", "evidence": "this session-mode run is itself the first end-to-end test of session prep, model fill, and validated render"},
+    {"claim": "The publication motive (a public home for the tool) is not recorded anywhere in the inputs", "basis": "model_inference", "evidence": null},
+    {"claim": "The empty-slug behaviour with `.` as target is a defect instead of intended", "basis": "model_inference", "evidence": null}
+  ]
+}

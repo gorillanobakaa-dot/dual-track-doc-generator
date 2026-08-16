@@ -1,0 +1,71 @@
+SESSION NOTES — 2026-08-16 — dual_track.py overhaul and publication
+Author: operator + agents working on /home/gorilla this day.
+These notes are the "why" layer for the session documentation. Facts below
+are drawn from the README gap analysis, file timestamps, and git history in
+this folder. Where something is a judgement, it says so.
+
+WHAT THE SESSION WAS ABOUT
+The dual-track documentation generator (dual_track.py) was overhauled after
+its output on a prior job (the ERR-UI-004 document, and the 2026-08-15
+documentation session where rendering was skipped entirely) showed eight
+distinct failure modes. The fixes were made earlier today, the script grew
+to 3283 lines, and the folder was then turned into a git repository and
+published to https://github.com/gorillanobakaa-dot/dual-track-doc-generator.
+
+THE EIGHT GAPS CLOSED TODAY (full rationale is in README.md, same commit)
+1. Added a whole new "session" mode: document WORK DONE in a directory
+   (git diff + git log + narrative file), not the current code state.
+   Schema fields: before_state, after_state, tried_and_abandoned,
+   claimed_but_not_verified, open_items.
+2. Added get_prior_doc_context(): prior STATUS*/PROGRESS*/GAP*/AUDIT* docs
+   in the target directory are injected into every prompt so the model must
+   confirm, correct, or supersede prior claims instead of ignoring them.
+3. Separation score now checks ideas, not just syntax: a second check scans
+   the layman big_picture for developer-vocabulary density (>6 terms
+   penalised); the two checks cap at 6 points each.
+4. Added BANNED_SELF_CONGRAT: 18 patterns catching self-congratulatory
+   narration ("triumph", "neutralizing", "I proved", "flawlessly") that the
+   marketing-phrase list never caught. Reported separately from marketing.
+5. Validation became the default on all render commands (--no-validate to
+   opt out); the then_run hint in prep files now includes --validate.
+6. worst_case prompt rewritten to demand a concrete, named harm with an
+   example, banning "incorrect results" as a catch-all.
+7. design_rationale field renamed known_alternatives; the prompt now forbids
+   inventing rationale not present in source comments — absence must be
+   stated as "Not available in the source material."
+8. Claim-sourcing instruction reversed: entries are for CONCLUSIONS and
+   ASSESSMENTS (reasoning), not raw quoted facts; a list containing only
+   stated_in_input entries is called out as a red flag.
+
+TIMELINE (file mtimes + git)
+- 08:15  README.md written (includes the full gap analysis).
+- 08:57  dual_track.py final version in this folder; the canonical copy
+         (~/Documents/ai-tooling/.../Documentation.Writing.Scripts/) and the
+         vault copy (Scripts.Vault.Do.Not.Delete/doc-tooling/) were synced;
+         ~/.local/bin/dual-track symlink points at the canonical copy.
+- 10:44  Self-documentation attempt in code mode: prep files, paste-ready
+         payloads, and the offline precheck were generated into docs-self/.
+         Precheck found 0 P0, 0 P1, 1 P2 (three TODO/FIXME markers left in
+         the source).
+- 10:57  git repo initialised here; single commit b0b880d with the script,
+         README, and the code-mode prep artifacts; pushed to GitHub.
+- 16:42  Two .filled.json files appeared for the code-mode preps. They are
+         thin stubs: most arrays empty (flags, api_surface, error_conditions,
+         how_it_works, glossary all []), one claim_source each. Judgement:
+         whatever filled them did a minimal job; they would not pass the
+         script's own validation gate and were never rendered. They were
+         left in place (house rule: nothing is deleted) as evidence of the
+         attempt.
+
+CLAIMED BUT NOT VERIFIED (be honest about these)
+- The three copies of the script being byte-identical was claimed in the
+  README but not re-verified within this session's records.
+- The eight fixes have not yet been proven end-to-end on a real job; this
+  session-mode run is itself the first end-to-end test of session prep,
+  model fill, and validated render.
+
+OPEN ITEMS AT SESSION START (this evening)
+- The code-mode filled stubs were never brought up to standard or rendered.
+- The three TODO/FIXME markers flagged by precheck remain in the source.
+- The session-mode documentation (this run) still needed to be generated,
+  validated, committed, and pushed.
