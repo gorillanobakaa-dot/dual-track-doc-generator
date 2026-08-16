@@ -1,10 +1,10 @@
 # dual_track.py — IBM/DITA Dual-Track Documentation Generator
 
 **Location**: `SECOND.BRAIN/Scripts/documentation/dual-track/dual_track.py`  
-**Canonical copy**: `~/Documents/ai-tooling/opencode/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py`  
+**Canonical copy**: `~/Documents/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py`  
 **Vault backup**: `~/Documents/Scripts.For.Work/Scripts.Vault.Do.Not.Delete/doc-tooling/dual_track.py`  
 **Symlink on PATH**: `~/.local/bin/dual-track` → canonical copy  
-**Current version**: 3283 lines · fixed 2026-08-16 by Bob (IBM) · (header previously said 3225 — that was the 08:06 draft's count)  
+**Current version**: 3434 lines · fixed 2026-08-16 by Bob (IBM), cleanup mode added same evening · (earlier counts: 3225 = 08:06 draft, 3283 = pre-cleanup)  
 **Language**: Python 3 · zero dependencies (stdlib only for core operation)
 
 ---
@@ -89,6 +89,24 @@ Or auto-generate from git since the last tag:
 ```bash
 dual-track release prep --output-dir ./release-notes
 ```
+
+### `cleanup` — retire working files after publication *(added 2026-08-16 evening)*
+```bash
+dual-track cleanup ./docs        # after the .md files are committed AND pushed
+```
+The deliverables of every run are the rendered `.md` files ONLY. The
+`.prep.json` / `.filled.json` / `PAYLOAD.*` / `PRECHECK.json` working files are
+never published: every `prep` run drops a `.gitignore` into the output directory
+covering them, and the prep envelope tells the filling model so in its
+`instructions` and `after_publish` fields.
+
+`cleanup` refuses to touch anything until it has PROOF the `.md` deliverables
+are committed and pushed (tracked, unmodified, no commits ahead of upstream).
+It then quarantines the working files to a dated folder under
+`~/Agents.Work.Trash` (or `<output-dir>/.dual-track-retired` on machines
+without that convention) — nothing is deleted. `--delete` performs a real
+deletion and exists only for an owner who explicitly asked; `--skip-publish-check`
+exists only for outputs intentionally not under git.
 
 ### `precheck` — rule-based scan, no model, no network
 ```bash
@@ -302,7 +320,7 @@ vault copy was found holding the 08:06 draft and re-synced the same evening):
 
 | Copy | Path | Role |
 |------|------|------|
-| Primary / symlink target | `~/Documents/ai-tooling/opencode/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py` | Working copy; `~/.local/bin/dual-track` points here |
+| Primary / symlink target | `~/Documents/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py` | Working copy; `~/.local/bin/dual-track` points here |
 | Vault backup | `~/Documents/Scripts.For.Work/Scripts.Vault.Do.Not.Delete/doc-tooling/dual_track.py` | Recovery copy |
 | Second Brain | `~/Documents/SECOND.BRAIN/Scripts/documentation/dual-track/dual_track.py` | This folder |
 

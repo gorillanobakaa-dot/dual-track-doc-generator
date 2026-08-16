@@ -66,6 +66,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -2008,7 +2009,14 @@ def _prep_envelope(system_prompt: str, user_prompt: str, schema_hint: str,
             "Save ONLY that JSON — no markdown fence, no text before or after — "
             "to the exact path in 'write_completion_to'. "
             "'schema_with_hints' explains each field in plain language. "
-            "'system_prompt' sets voice and rules; 'user_prompt' has the input material."
+            "'system_prompt' sets voice and rules; 'user_prompt' has the input material. "
+            "PUBLICATION RULE — this is not optional: the DELIVERABLES are the "
+            "rendered .md files only. Never commit or upload this file, any "
+            ".prep.json, .filled.json, PAYLOAD.* or PRECHECK.json — they are "
+            "local working files (a .gitignore in the output directory enforces "
+            "this; do not remove or bypass it). After the rendered .md files "
+            "are committed AND pushed, run the 'cleanup' command shown in "
+            "'after_publish' to retire the working files."
         ),
         "system_prompt": system_prompt,
         "user_prompt": user_prompt,
@@ -2016,11 +2024,40 @@ def _prep_envelope(system_prompt: str, user_prompt: str, schema_hint: str,
         "schema_with_hints": schema_hint,
         "write_completion_to": str(write_to),
         "then_run": then_run,
+        "after_publish": (f"{_invocation()} cleanup {write_to.parent} "
+                          "# ONLY after the rendered .md files are committed and pushed"),
     }
 
 
 def _write_prep_file(path: Path, envelope: dict):
     path.write_text(json.dumps(envelope, indent=2), encoding="utf-8")
+
+
+# Working files the pipeline creates on the way to the rendered .md
+# deliverables. Never published; targeted by the cleanup command.
+INTERMEDIATE_GLOBS = ["*.prep.json", "*.filled.json", "PAYLOAD.*", "PRECHECK.json"]
+
+GITIGNORE_HEADER = "# dual_track.py working files — local only, never published\n"
+
+
+def write_output_gitignore(out_dir: Path):
+    """Drop a .gitignore covering the intermediates into the output dir.
+
+    Merges with an existing .gitignore instead of overwriting it: only the
+    missing patterns are appended. This makes 'git add -A' safe — the
+    deliverable .md files are committable, the working files are not.
+    """
+    gi = out_dir / ".gitignore"
+    existing = gi.read_text(encoding="utf-8") if gi.exists() else ""
+    have = {line.strip() for line in existing.splitlines()}
+    missing = [p for p in INTERMEDIATE_GLOBS if p not in have]
+    if not missing:
+        return
+    block = ("" if not existing else ("" if existing.endswith("\n") else "\n"))
+    if GITIGNORE_HEADER.strip() not in have:
+        block += GITIGNORE_HEADER
+    block += "\n".join(missing) + "\n"
+    gi.write_text(existing + block, encoding="utf-8")
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -2252,6 +2289,7 @@ def run_precheck_mode(args):
         raise DualTrackError(f"target not found: {target}")
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    write_output_gitignore(out_dir)
 
     root = target if target.is_dir() else target.parent
     files = find_source_files(target)
@@ -2322,6 +2360,7 @@ def run_code_prep(args):
         sys.exit(1)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    write_output_gitignore(out_dir)
 
     if source.is_dir():
         code, topic_infos, stem = build_topic_source(source)
@@ -2532,6 +2571,7 @@ def run_release_prep(args):
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    write_output_gitignore(out_dir)
     meta = _release_meta(args)
     meta_block = "\n".join(f"{k.upper()}: {v}" for k, v in meta.items() if v)
     (out_dir / "release.meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -3041,6 +3081,7 @@ def run_session_prep(args):
         raise DualTrackError(f"target not found: {target}")
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    write_output_gitignore(out_dir)
 
     narrative = Path(args.narrative) if getattr(args, "narrative", None) else None
     session_input, slug = _build_session_input(
@@ -3118,6 +3159,98 @@ def run_session_render(args):
         Path(args.output).write_text(full, encoding="utf-8")
 
     _exit_on_failed_validation(failed_validation)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  CLEANUP — retire working files AFTER the deliverables are published
+# ══════════════════════════════════════════════════════════════════════
+
+def _git(out_dir: Path, cmd: str) -> str:
+    return _shell(f"git {cmd}", cwd=out_dir)
+
+
+def run_cleanup(args):
+    """Quarantine the pipeline's working files (.prep.json, .filled.json,
+    PAYLOAD.*, PRECHECK.json) once — and only once — the rendered .md
+    deliverables are proven committed AND pushed.
+
+    Refuses loudly otherwise. Nothing is ever deleted by default: files are
+    moved to a dated folder under the trash root so the cleanup is
+    reversible. --delete performs a real deletion and exists only for an
+    owner who explicitly asked for removal.
+    """
+    out_dir = Path(args.output_dir).resolve()
+    if not out_dir.is_dir():
+        raise DualTrackError(f"output dir not found: {out_dir}")
+
+    intermediates = sorted(
+        p for pattern in INTERMEDIATE_GLOBS for p in out_dir.glob(pattern))
+    if not intermediates:
+        print(f"Nothing to clean in {out_dir} — no working files present.")
+        return
+
+    deliverables = sorted(p for p in out_dir.glob("*.md"))
+    if not deliverables:
+        raise DualTrackError(
+            f"Refusing to clean {out_dir}: no rendered .md files exist there.\n"
+            "The working files are the only record — render first:\n"
+            f"  {_invocation()} <mode> render ... --output-dir {out_dir}")
+
+    # ── Publication proof ─────────────────────────────────────────────
+    if args.skip_publish_check:
+        print("⚠️  --skip-publish-check: NOT verifying the .md files are pushed.")
+    else:
+        toplevel = _git(out_dir, "rev-parse --show-toplevel")
+        if not toplevel:
+            raise DualTrackError(
+                f"Refusing to clean: {out_dir} is not inside a git repository, "
+                "so publication cannot be verified.\n"
+                "If this output is intentionally not under git, re-run with "
+                "--skip-publish-check.")
+        problems = []
+        for md in deliverables:
+            rel = md.relative_to(Path(toplevel))
+            if not _git(out_dir, f"ls-files -- '{rel}'"):
+                problems.append(f"  NOT COMMITTED: {md.name}")
+            elif _git(out_dir, f"status --porcelain -- '{rel}'"):
+                problems.append(f"  MODIFIED SINCE COMMIT: {md.name}")
+        upstream = _git(out_dir, "rev-parse --abbrev-ref --symbolic-full-name @{u}")
+        if not upstream:
+            problems.append("  NO UPSTREAM: the branch has no remote tracking "
+                            "branch, so 'pushed' cannot be verified.")
+        else:
+            unpushed = _git(out_dir, "log --oneline @{u}..HEAD")
+            if unpushed:
+                problems.append(f"  UNPUSHED COMMITS ahead of {upstream}:\n    "
+                                + "\n    ".join(unpushed.splitlines()[:5]))
+        if problems:
+            raise DualTrackError(
+                "Refusing to clean — publication of the deliverables is NOT "
+                "confirmed:\n" + "\n".join(problems) +
+                "\nCommit and push the .md files first, then re-run cleanup.")
+        print(f"✅ Publication confirmed: {len(deliverables)} .md file(s) "
+              f"committed and pushed ({upstream}).")
+
+    # ── Retire the working files ──────────────────────────────────────
+    if args.delete:
+        for p in intermediates:
+            p.unlink()
+            print(f"  🗑️  deleted {p.name}")
+        print(f"\nDeleted {len(intermediates)} working file(s). "
+              "(--delete was explicit; no copy kept)")
+        return
+
+    trash_root = Path(args.trash).expanduser() if args.trash else None
+    if trash_root is None:
+        house = Path.home() / "Agents.Work.Trash"
+        trash_root = house if house.is_dir() else out_dir / ".dual-track-retired"
+    dest = trash_root / f"dual-track-cleanup-{datetime.now().strftime('%y-%m-%d-%H-%M')}"
+    dest.mkdir(parents=True, exist_ok=True)
+    for p in intermediates:
+        shutil.move(str(p), str(dest / p.name))
+        print(f"  📦 {p.name}  →  {dest}")
+    print(f"\nQuarantined {len(intermediates)} working file(s) to:\n  {dest}\n"
+          "Nothing was deleted — restore by moving the files back.")
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -3227,6 +3360,23 @@ def main():
     sr.add_argument("--min-score", type=int, default=85, metavar="N")
     sr.add_argument("--json", action="store_true")
 
+    # ── cleanup ───────────────────────────────────────────────────────
+    cu = mode_sub.add_parser(
+        "cleanup",
+        help="Retire working files (.prep/.filled/PAYLOAD/PRECHECK.json) after "
+             "the rendered .md deliverables are confirmed committed and pushed.")
+    cu.add_argument("output_dir", help="The --output-dir the docs were rendered into")
+    cu.add_argument("--trash", metavar="DIR",
+                    help="Quarantine folder root (default: ~/Agents.Work.Trash "
+                         "if it exists, else <output-dir>/.dual-track-retired)")
+    cu.add_argument("--delete", action="store_true",
+                    help="Really delete instead of quarantining. Only when the "
+                         "owner explicitly asked for permanent removal.")
+    cu.add_argument("--skip-publish-check", action="store_true",
+                    help="Skip the committed-and-pushed verification. Only for "
+                         "outputs that are intentionally not under git.")
+    cu.set_defaults(action="run")
+
     # ── release ───────────────────────────────────────────────────────
     rel_p = mode_sub.add_parser("release", help="Generate release notes from a changelog/diff")
     rel_action = rel_p.add_subparsers(dest="action", required=True)
@@ -3270,6 +3420,7 @@ def main():
             ("release", "prep"): run_release_prep,
             ("release", "render"): run_release_render,
             ("precheck", "run"): run_precheck_mode,
+            ("cleanup", "run"): run_cleanup,
             ("session", "prep"): run_session_prep,
             ("session", "render"): run_session_render,
         }
