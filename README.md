@@ -1,5 +1,16 @@
 # dual_track.py — IBM/DITA Dual-Track Documentation Generator
 
+<!-- WHO-THIS-IS-FOR: managed block, do not edit by hand -->
+
+**Writes the developer documentation and the plain-language documentation together, from one source, with no network calls.**
+
+Built for the people every other tool prices out: kids with no credit
+card, 15-year-old laptops, data sold by the megabyte. Free forever, by
+design, not as a trial.
+Why, with the numbers: [PHILOSOPHY.md](https://github.com/gorillanobakaa-dot/Gorilla.Opencode/blob/main/PHILOSOPHY.md)
+
+<!-- /WHO-THIS-IS-FOR -->
+
 **Location**: `SECOND.BRAIN/Scripts/documentation/dual-track/dual_track.py`  
 **Canonical copy**: `~/Documents/Gorilla.Opencode/Documentation.Scripts/Documentation.Writing.Scripts/dual_track.py`  
 **Vault backup**: `~/Documents/Scripts.For.Work/Scripts.Vault.Do.Not.Delete/doc-tooling/dual_track.py`  
