@@ -33,7 +33,8 @@ into two parallel, complete documents:
 Neither track is a summary of the other. They cover the same subject in two completely
 different languages, structured for two completely different questions.
 
-The script **never makes a network call**. It has two jobs:
+The script **makes no network call unless you pass `--call-model`** (which sends the prep to Claude or
+Gemini with your own key, or to a local Ollama model with `--allow-local`). Otherwise it has two jobs:
 
 1. **`prep`** — reads your source and writes a `.prep.json` containing a system prompt,
    user prompt, and JSON Schema. The model fills this.
@@ -387,6 +388,10 @@ def rules(infos, collect):
 ```
 The file is auto-discovered by walking up from the target until a `.git` directory is
 found. It is loaded only if it exists; most projects need only the builtin rules.
+
+It is Python and runs with your rights, like a Makefile: the tool names it on stderr
+(`Project rules: running ...`) before it runs, and `--no-rules` skips it - use that on a
+tree you did not write.
 
 ---
 
