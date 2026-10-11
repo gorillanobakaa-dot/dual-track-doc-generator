@@ -4,3 +4,4 @@ docs-self/*.filled.json
 docs-self/PAYLOAD.*
 docs-self/SESSION_NOTES_*
 docs-self/PRECHECK.json
+__pycache__/
