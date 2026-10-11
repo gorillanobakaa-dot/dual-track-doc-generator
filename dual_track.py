@@ -1015,6 +1015,18 @@ def default_rules_path(target: Path) -> Path:
     return None
 
 
+def project_rules(args, target: Path):
+    """The project rules file to run: --rules, or the nearest .dual-track-rules.py - which is Python and runs
+    with your rights, so it is named before it runs, and --no-rules skips it (a tree you did not write)."""
+    if getattr(args, "no_rules", False):
+        print("Project rules: skipped (--no-rules); builtin rules only.", file=sys.stderr)
+        return None
+    path = Path(args.rules) if args.rules else default_rules_path(target)
+    if path:
+        print(f"Project rules: running {path}", file=sys.stderr)
+    return path
+
+
 def run_precheck(infos: list, rules_path: Path = None) -> list:
     """Run builtin rules plus any project rules. Returns defect dicts.
 
@@ -1072,30 +1084,43 @@ def render_precheck(topic: str, infos: list, defects: list) -> str:
 #  AUTO-CONTEXT GATHERING
 # ══════════════════════════════════════════════════════════════════════
 
-def _shell(cmd: str, cwd: Path = None, default: str = "") -> str:
+def _git_out(args: list, cwd: Path = None, default: str = "", limit: int = None) -> str:
+    """git with its arguments as a list - no shell. A value that came from the command line (a ref, a file
+    name) is one argument and nothing else: no quoting to get wrong, nothing for a shell to interpret, and the
+    same result on Windows, where cmd.exe understood neither the single quotes nor `| head` these commands
+    used to rely on. `limit` keeps the first lines, as `| head -N` did."""
     try:
-        return subprocess.check_output(
-            cmd, shell=True, cwd=cwd, text=True,
+        out = subprocess.check_output(
+            ["git", *args], cwd=cwd, text=True,
             stderr=subprocess.DEVNULL, timeout=15
         ).strip()
     except Exception:
         return default
+    return "\n".join(out.splitlines()[:limit]) if limit else out
+
+
+def _resolve_commit(ref: str, cwd: Path = None) -> str:
+    """A ref (HEAD~10, a tag, a hash) -> the commit it names, or "" when it names none. Whatever --since
+    held reaches git only as this hash, so a value starting with "-" can never be read as an option."""
+    if not ref or ref.startswith("-"):
+        return ""
+    return _git_out(["rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"], cwd=cwd)
 
 
 def get_git_context(cwd: Path) -> dict:
-    tags_raw = _shell("git tag --sort=-v:refname | head -10", cwd=cwd)
+    tags_raw = _git_out(["tag", "--sort=-v:refname"], cwd=cwd, limit=10)
     tags = [t for t in tags_raw.splitlines() if t]
     last_tag = tags[0] if tags else ""
     commits_since = ""
     if last_tag:
-        commits_since = _shell(f"git log {last_tag}..HEAD --oneline | head -30", cwd=cwd)
+        commits_since = _git_out(["log", f"{last_tag}..HEAD", "--oneline"], cwd=cwd, limit=30)
     return {
         "tags": tags,
         "last_tag": last_tag,
-        "branch": _shell("git branch --show-current", cwd=cwd),
-        "remote_url": _shell("git remote get-url origin", cwd=cwd),
+        "branch": _git_out(["branch", "--show-current"], cwd=cwd),
+        "remote_url": _git_out(["remote", "get-url", "origin"], cwd=cwd),
         "commits_since_last_tag": commits_since.splitlines(),
-        "total_commits": _shell("git rev-list --count HEAD", cwd=cwd),
+        "total_commits": _git_out(["rev-list", "--count", "HEAD"], cwd=cwd),
     }
 
 
@@ -2297,7 +2322,7 @@ def run_precheck_mode(args):
         raise DualTrackError(f"no documentable source files under {target}")
     infos = [analyze_file(f, root) for f in files]
 
-    rules_path = Path(args.rules) if args.rules else default_rules_path(target)
+    rules_path = project_rules(args, target)
     defects = run_precheck(infos, rules_path)
 
     slug = re.sub(r'[^a-z0-9]+', '-', target.name.lower()).strip('-') or "precheck"
@@ -2381,7 +2406,7 @@ def run_code_prep(args):
     precheck_block = ""
     tracks = _track_list(args.format)
     if not args.no_precheck:
-        rules_path = Path(args.rules) if args.rules else default_rules_path(source)
+        rules_path = project_rules(args, source)
         infos = (topic_infos if topic_infos is not None
                  else [analyze_file(source, source.parent)])
         defects = run_precheck(infos, rules_path)
@@ -2555,7 +2580,7 @@ def run_release_prep(args):
             sys.exit(1)
         tag = git_ctx["last_tag"]
         print(f"Auto-generating from git: commits since {tag}...", file=sys.stderr)
-        technical_input = _shell(f"git log {tag}..HEAD --stat", cwd=cwd)
+        technical_input = _git_out(["log", f"{tag}..HEAD", "--stat"], cwd=cwd)
         if not technical_input.strip():
             technical_input = (f"No commits since {tag}. "
                                "This appears to be a maintenance or documentation release.")
@@ -3017,16 +3042,19 @@ def _build_session_input(target: Path, narrative_file: Path = None,
 
     since_arg = since or "HEAD~10"   # default: last 10 commits
     parts = [f"SESSION INPUT — directory: {target}", f"Generated: {datetime.now().isoformat()}", ""]
+    base = _resolve_commit(since_arg, cwd)
+    if not base:
+        parts += [f"GIT: {since_arg!r} names no commit here - no diff or log could be taken.", ""]
 
     # Layer 1: diff stat (scope overview)
-    diff_stat = _shell(f"git diff {since_arg} --stat", cwd=cwd)
+    diff_stat = _git_out(["diff", base, "--stat"], cwd=cwd) if base else ""
     if diff_stat:
         parts += ["=" * 60, f"GIT DIFF STAT (since {since_arg})", "=" * 60, diff_stat, ""]
     else:
         parts += [f"GIT DIFF STAT: not available (no git repo, or no changes since {since_arg})", ""]
 
     # Layer 2: full diff (evidence)
-    diff_full = _shell(f"git diff {since_arg} -- . ':(exclude)*.lock'", cwd=cwd)
+    diff_full = _git_out(["diff", base, "--", ".", ":(exclude)*.lock"], cwd=cwd) if base else ""
     if diff_full:
         # Cap at ~600 lines to avoid flooding the context; model sees scope from stat
         diff_lines = diff_full.splitlines()
@@ -3041,7 +3069,9 @@ def _build_session_input(target: Path, narrative_file: Path = None,
         parts += ["GIT DIFF: not available (no changes or no git repo)", ""]
 
     # Layer 3: commit log (timeline)
-    log = _shell(f"git log {since_arg} --oneline --stat", cwd=cwd)
+    # {base}..HEAD: the commits made SINCE it. `git log {since}` listed the history BEFORE it - the
+    # opposite of the diff above, which has always been the changes since.
+    log = _git_out(["log", f"{base}..HEAD", "--oneline", "--stat"], cwd=cwd) if base else ""
     if log:
         parts += ["=" * 60, f"GIT LOG (since {since_arg})", "=" * 60, log, ""]
     else:
@@ -3165,8 +3195,8 @@ def run_session_render(args):
 #  CLEANUP — retire working files AFTER the deliverables are published
 # ══════════════════════════════════════════════════════════════════════
 
-def _git(out_dir: Path, cmd: str) -> str:
-    return _shell(f"git {cmd}", cwd=out_dir)
+def _git(out_dir: Path, *args: str) -> str:
+    return _git_out(list(args), cwd=out_dir)
 
 
 def run_cleanup(args):
@@ -3200,7 +3230,7 @@ def run_cleanup(args):
     if args.skip_publish_check:
         print("⚠️  --skip-publish-check: NOT verifying the .md files are pushed.")
     else:
-        toplevel = _git(out_dir, "rev-parse --show-toplevel")
+        toplevel = _git(out_dir, "rev-parse", "--show-toplevel")
         if not toplevel:
             raise DualTrackError(
                 f"Refusing to clean: {out_dir} is not inside a git repository, "
@@ -3210,16 +3240,16 @@ def run_cleanup(args):
         problems = []
         for md in deliverables:
             # git runs with cwd=out_dir, so pathspecs are relative to out_dir
-            if not _git(out_dir, f"ls-files -- '{md.name}'"):
+            if not _git(out_dir, "ls-files", "--", md.name):
                 problems.append(f"  NOT COMMITTED: {md.name}")
-            elif _git(out_dir, f"status --porcelain -- '{md.name}'"):
+            elif _git(out_dir, "status", "--porcelain", "--", md.name):
                 problems.append(f"  MODIFIED SINCE COMMIT: {md.name}")
-        upstream = _git(out_dir, "rev-parse --abbrev-ref --symbolic-full-name @{u}")
+        upstream = _git(out_dir, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
         if not upstream:
             problems.append("  NO UPSTREAM: the branch has no remote tracking "
                             "branch, so 'pushed' cannot be verified.")
         else:
-            unpushed = _git(out_dir, "log --oneline @{u}..HEAD")
+            unpushed = _git(out_dir, "log", "--oneline", "@{u}..HEAD")
             if unpushed:
                 problems.append(f"  UNPUSHED COMMITS ahead of {upstream}:\n    "
                                 + "\n    ".join(unpushed.splitlines()[:5]))
@@ -3282,6 +3312,8 @@ def main():
     cp.add_argument("--no-auto-context", action="store_true")
     cp.add_argument("--rules", metavar="FILE",
                     help="Project rule plugin. Default: nearest .dual-track-rules.py")
+    cp.add_argument("--no-rules", action="store_true",
+                    help="Do not run a project rules file (it is Python): builtin rules only.")
     cp.add_argument("--no-precheck", action="store_true",
                     help="Skip the rule pre-check. Rarely right — it is the only "
                          "part of the report that is not a model's opinion.")
@@ -3306,6 +3338,8 @@ def main():
     cr.add_argument("--output-dir", default="./docs")
     cr.add_argument("--format", choices=["both", "all", "layman", "developer", "audit"],
                     default="both")
+    cr.add_argument("--validate", dest="validate", action="store_true",
+                    help="Validate the output (the default; accepted so the commands printed by prep work).")
     cr.add_argument("--no-validate", dest="validate", action="store_false",
                     help="Skip quality validation. Default is to validate.")
     cr.set_defaults(validate=True)
@@ -3325,6 +3359,8 @@ def main():
     pc.add_argument("target", help="File or directory to scan")
     pc.add_argument("--output-dir", default=".")
     pc.add_argument("--rules", metavar="FILE")
+    pc.add_argument("--no-rules", action="store_true",
+                    help="Do not run a project rules file (it is Python): builtin rules only.")
     pc.set_defaults(action="run")
 
     # ── session ───────────────────────────────────────────────────────
@@ -3354,6 +3390,8 @@ def main():
     sr.add_argument("--output-dir", default=".")
     sr.add_argument("--format", choices=["both", "layman", "developer"], default="both")
     sr.add_argument("--output", "-o")
+    sr.add_argument("--validate", dest="validate", action="store_true",
+                    help="Validate the output (the default; accepted so the commands printed by prep work).")
     sr.add_argument("--no-validate", dest="validate", action="store_false",
                     help="Skip quality validation. Default is to validate.")
     sr.set_defaults(validate=True)
@@ -3406,6 +3444,8 @@ def main():
     rr.add_argument("--output", "-o")
     rr.add_argument("--output-layman", metavar="FILE")
     rr.add_argument("--output-dev", metavar="FILE")
+    rr.add_argument("--validate", dest="validate", action="store_true",
+                    help="Validate the output (the default; accepted so the commands printed by prep work).")
     rr.add_argument("--no-validate", dest="validate", action="store_false",
                     help="Skip quality validation. Default is to validate.")
     rr.set_defaults(validate=True)
