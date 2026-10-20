@@ -76,14 +76,14 @@ python3 dual_track.py precheck . --output-dir ./docs-self
 
 **Step 2:**
 ```bash
-python3 dual_track.py session render /home/gorilla/Documents/SECOND.BRAIN/Scripts/documentation/dual-track --output-dir ./docs-self --validate
+python3 dual_track.py session render . --output-dir ./docs-self --validate
 ```
   - **Pass:** Two Markdown files appear (`dual-track_session_developer.md`, `dual-track_session_layman.md`) and both tracks score at least 85/100.
   - **Fail:** Exit code 2 with named failing checks, or a score below the 85 threshold.
 
 **Step 3:**
 ```bash
-git -C /home/gorilla/Documents/SECOND.BRAIN/Scripts/documentation/dual-track log --oneline origin/master
+git log --oneline origin/master
 ```
   - **Pass:** The pushed history contains commit `b0b880d` and the follow-up commit with the session documentation.
   - **Fail:** `origin/master` missing the documentation commit, meaning the push never happened.
