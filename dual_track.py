@@ -88,14 +88,18 @@ VOICE AND TENSE (ibm-style?topic=language-grammar-verbs)
 - Active voice only. "The function returns X" not "X is returned by the function".
   Rewrite every passive construction: "was committed" -> "you committed",
   "was verified" -> "the test verified", "was derived" -> "the analysis derived".
-- Present tense throughout — even for historical descriptions of software behaviour.
+- Present tense throughout — even for historical descriptions of software behavior.
   "The file contains 1969 lines" not "The file contained 1969 lines".
   "The bug is fixed" not "The bug was fixed".
   Exception: the Before/After comparison sections, where past tense is accurate.
 - Second person only. "You configure", not "the user configures", not "we configured".
 
+SPELLING (owner, 2026-10-16: "keep it international rather than regional")
+- US spelling everywhere: color, behavior, organize, analyze, license (noun and verb), center, gray.
+  British spelling belongs only to the academic part of the harness (fieldkit-academic), never here.
+
 HEADINGS (ibm-style?topic=structure-format-headings)
-- Sentence case for ALL headings. Capitalise only the first word and proper nouns.
+- Sentence case for ALL headings. Capitalize only the first word and proper nouns.
   "What changed for you" not "What Changed For You".
   "Honest state of play" not "Honest State of Play".
   "Should you be concerned?" not "Should You Be Concerned?".
@@ -346,7 +350,7 @@ CODE_LAYMAN_SCHEMA_HINT = """{
     "your_internet": "Effect on network use, connections or data allowance."
   },
 
-  /* Any switch, guard or flag that turns behaviour off — the thing a worried
+  /* Any switch, guard or flag that turns behavior off — the thing a worried
      reader most wants to find. Use "N/A — none" if there is none. */
   "kill_switch_explained": {
     "what_it_is": "The off switch, named and located in plain terms.",
@@ -546,9 +550,9 @@ def render_audit(d: dict, target: str, infos: list = None,
          f"| **Files scanned** | {files} |",
          f"| **Date / time** | {now} |",
          f"| **Audit status** | {d.get('status', 'N/A')} |", "",
-         "## SECTION B: EXECUTIVE SUMMARY (Plain Language)", "",
+         "## SECTION B: EXECUTIVE SUMMARY (plain language)", "",
          d.get("executive_summary_layman", "*Not supplied.*"), "",
-         "## SECTION C: TECHNICAL SUMMARY (Developer)", "",
+         "## SECTION C: TECHNICAL SUMMARY (developer)", "",
          d.get("technical_summary_developer", "*Not supplied.*"), "",
          "## SECTION D: DETECTED DEFECTS", ""]
 
@@ -1058,7 +1062,7 @@ def render_precheck(topic: str, infos: list, defects: list) -> str:
          f"*Generated {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} by rules only. "
          f"No model was involved, so everything below is a deterministic finding "
          f"about the files as they are on disk.*", "",
-         "## Files Scanned", "",
+         "## Files scanned", "",
          "| File | Language | Lines | Code | Complexity | SHA-256 |",
          "|---|---|---|---|---|---|"]
     for i in infos:
@@ -1333,7 +1337,7 @@ def render_claim_sources(d: dict) -> list:
     sources = d.get("claim_sources", [])
     if not sources:
         return []
-    L = ["## Claim Sources\n",
+    L = ["## Claim sources\n",
          "| Claim | Basis | Evidence |",
          "|-------|-------|----------|"]
     for s in sources:
@@ -1361,7 +1365,7 @@ def render_code_dev(d: dict, filename: str) -> str:
     if concept.get("purpose"):
         L += ["## Purpose\n", concept["purpose"] + "\n"]
     if concept.get("known_alternatives"):
-        L += ["## Known Alternatives Considered\n", concept["known_alternatives"] + "\n"]
+        L += ["## Known alternatives considered\n", concept["known_alternatives"] + "\n"]
 
     arch = concept.get("architecture", {})
     if arch:
@@ -1379,7 +1383,7 @@ def render_code_dev(d: dict, filename: str) -> str:
     ref = d.get("reference", {})
 
     if ref.get("flags"):
-        L += ["## Flags & Configuration\n",
+        L += ["## Flags and configuration\n",
               "| Name | Type | Default | Effect | Notes |",
               "|------|------|---------|--------|-------|"]
         for f in ref["flags"]:
@@ -1388,7 +1392,7 @@ def render_code_dev(d: dict, filename: str) -> str:
         L.append("")
 
     if ref.get("api_surface"):
-        L += ["## API Surface\n",
+        L += ["## API surface\n",
               "| Symbol | Description | Side Effects |",
               "|--------|-------------|--------------|"]
         for a in ref["api_surface"]:
@@ -1397,7 +1401,7 @@ def render_code_dev(d: dict, filename: str) -> str:
         L.append("")
 
     if ref.get("kill_switches"):
-        L.append("## Kill Switches\n")
+        L.append("## Kill switches\n")
         for k in ref["kill_switches"]:
             rev = "reversible" if k.get("reversible") else "**not reversible**"
             L.append(f"### `{k.get('location','')}`\n"
@@ -1407,7 +1411,7 @@ def render_code_dev(d: dict, filename: str) -> str:
                      f"- {k.get('notes','')}\n")
 
     if ref.get("dead_code"):
-        L.append("## Dead Code\n")
+        L.append("## Dead code\n")
         for c in ref["dead_code"]:
             L.append(f"- **`{c.get('location','')}`** — {c.get('reason','')} "
                      f"(risk: {c.get('risk','')})")
@@ -1433,7 +1437,7 @@ def render_code_dev(d: dict, filename: str) -> str:
         L.append("")
 
     if ref.get("error_conditions"):
-        L += ["## Error Conditions\n",
+        L += ["## Error conditions\n",
               "| Error | Cause | Remedy |",
               "|-------|-------|--------|"]
         for e in ref["error_conditions"]:
@@ -1474,7 +1478,7 @@ def render_code_dev(d: dict, filename: str) -> str:
     debt = d.get("technical_debt", [])
     if debt:
         icons = {"low": "🟡", "medium": "🟠", "high": "🔴"}
-        L.append("## Technical Debt\n")
+        L.append("## Technical debt\n")
         for t in debt:
             sev = t.get("severity", "low")
             L.append(f"{icons.get(sev,'🟡')} **{sev.upper()}** — "
@@ -1482,7 +1486,7 @@ def render_code_dev(d: dict, filename: str) -> str:
         L.append("")
 
     if d.get("impact_if_removed"):
-        L += ["## Impact If Removed\n", d["impact_if_removed"] + "\n"]
+        L += ["## Impact if removed\n", d["impact_if_removed"] + "\n"]
 
     L.extend(render_claim_sources(d))
     L.append(TRANSPARENCY_FOOTER)
@@ -1497,18 +1501,18 @@ def render_code_layman(d: dict, filename: str) -> str:
          "---\n"]
 
     if d.get("should_you_run_this"):
-        L += ["## Should You Run This?\n", d["should_you_run_this"] + "\n"]
+        L += ["## Should you run this?\n", d["should_you_run_this"] + "\n"]
 
     concept = d.get("concept", {})
     if concept.get("worst_case"):
-        L += ["## Worst Case, Honestly\n", concept["worst_case"] + "\n"]
+        L += ["## Worst case, honestly\n", concept["worst_case"] + "\n"]
     if concept.get("data_and_privacy"):
-        L += ["## What Data This Touches\n", concept["data_and_privacy"] + "\n"]
+        L += ["## What data this touches\n", concept["data_and_privacy"] + "\n"]
 
     vtask = d.get("verification_task", {})
     vsteps = vtask.get("steps", [])
     if vsteps:
-        L += ["## Before You Trust It\n"]
+        L += ["## Before you trust it\n"]
         if vtask.get("context"):
             L.append(vtask["context"] + "\n")
         for s in vsteps:
@@ -1518,11 +1522,11 @@ def render_code_layman(d: dict, filename: str) -> str:
         L.append("")
 
     if concept.get("big_picture"):
-        L += ["## The Big Picture\n", concept["big_picture"] + "\n"]
+        L += ["## The big picture\n", concept["big_picture"] + "\n"]
 
     concepts = concept.get("key_concepts", [])
     if concepts:
-        L += ["## Key Concepts\n",
+        L += ["## Key concepts\n",
               "| Name | What It Means | Real-World Comparison |",
               "|------|--------------|------------------------|"]
         for c in concepts:
@@ -1537,21 +1541,21 @@ def render_code_layman(d: dict, filename: str) -> str:
     # rigour, not a reduced one.
     steps = d.get("how_it_works", [])
     if steps:
-        L.append("## How It Works — Step by Step\n")
+        L.append("## How it works — step by step\n")
         for s in steps:
             L += [f"### Step {s.get('step','')}: {s.get('title','')}\n",
                   s.get("explanation", "") + "\n"]
 
     quirks = d.get("quirky_things", [])
     if quirks:
-        L.append("## Quirky Things Worth Knowing\n")
+        L.append("## Quirky things worth knowing\n")
         for q in quirks:
             L += [f"### {q.get('title','')}\n", q.get("explanation", "") + "\n"]
 
     impact = d.get("real_world_impact", {})
     if any(impact.get(k) for k in
            ("battery_cpu_ram", "speed", "your_privacy", "your_internet")):
-        L.append("## What This Means For You\n")
+        L.append("## What this means for you\n")
         for label, key in [("Battery, Processor & Memory", "battery_cpu_ram"),
                            ("Speed", "speed"),
                            ("Your Privacy", "your_privacy"),
@@ -1561,7 +1565,7 @@ def render_code_layman(d: dict, filename: str) -> str:
 
     ks = d.get("kill_switch_explained", {})
     if any(ks.get(k) for k in ("what_it_is", "without_it", "real_life_analogy")):
-        L.append("## The Off Switch\n")
+        L.append("## The off switch\n")
         if ks.get("what_it_is"):
             L.append(f"**What it is:** {ks['what_it_is']}\n")
         if ks.get("without_it"):
@@ -1586,17 +1590,17 @@ def render_code_layman(d: dict, filename: str) -> str:
 
     ts = d.get("troubleshooting", [])
     if ts:
-        L.append("## If Something Goes Wrong\n")
+        L.append("## If something goes wrong\n")
         for t in ts:
             L.append(f"**{t.get('symptom','')}**\n"
                      f"{t.get('plain_cause','')}\n"
                      f"What to do: {t.get('remedy','')}\n")
 
     if d.get("why_it_matters"):
-        L += ["## Why a Developer Would Do This\n", d["why_it_matters"] + "\n"]
+        L += ["## Why a developer would do this\n", d["why_it_matters"] + "\n"]
 
     if d.get("open_source_angle"):
-        L += ["## Why It Matters That You Can Read This\n",
+        L += ["## Why it matters that you can read this\n",
               d["open_source_angle"] + "\n"]
 
     glossary = d.get("glossary", [])
@@ -1631,18 +1635,18 @@ def render_release_dev(d: dict, meta: dict = None) -> str:
     if concept.get("summary"):
         L += ["## Summary\n", concept["summary"] + "\n"]
     if concept.get("known_alternatives"):
-        L += ["## Known Alternatives Considered\n", concept["known_alternatives"] + "\n"]
+        L += ["## Known alternatives considered\n", concept["known_alternatives"] + "\n"]
     if concept.get("architecture_impact"):
-        L += ["## Architecture Impact\n", concept["architecture_impact"] + "\n"]
+        L += ["## Architecture impact\n", concept["architecture_impact"] + "\n"]
 
     ref = d.get("reference", {})
     if ref.get("toolchain"):
         L += ["## Toolchain\n", f"```\n{ref['toolchain']}\n```\n"]
     if ref.get("resource_deltas"):
-        L += ["## Resource Deltas\n", ref["resource_deltas"] + "\n"]
+        L += ["## Resource deltas\n", ref["resource_deltas"] + "\n"]
 
     if ref.get("code_changes"):
-        L += ["## Code Changes\n",
+        L += ["## Code changes\n",
               "| File | Change | Old Behavior | New Behavior |",
               "|------|--------|--------------|--------------|"]
         for c in ref["code_changes"]:
@@ -1651,20 +1655,20 @@ def render_release_dev(d: dict, meta: dict = None) -> str:
         L.append("")
 
     if ref.get("subsystem_changes"):
-        L.append("## Subsystem Changes\n")
+        L.append("## Subsystem changes\n")
         for s in ref["subsystem_changes"]:
             L.append(f"**{s.get('subsystem','').upper()}:** {s.get('details','')}\n")
 
     tc = ref.get("test_coverage", {})
     if any(tc.values()):
-        L.append("## Test Coverage\n")
+        L.append("## Test coverage\n")
         for k in ("added", "removed", "notes"):
             if tc.get(k):
                 L.append(f"- **{k.title()}:** {tc[k]}")
         L.append("")
 
     if ref.get("security_posture"):
-        L += ["## Security Posture\n", ref["security_posture"] + "\n"]
+        L += ["## Security posture\n", ref["security_posture"] + "\n"]
 
     deploy = d.get("deployment_task", {})
     if deploy.get("steps"):
@@ -1675,7 +1679,11 @@ def render_release_dev(d: dict, meta: dict = None) -> str:
             for p in prereqs:
                 L.append(f"- {p}")
             L.append("")
-        L.append("```bash")
+        # the fence names the shell the commands are written for (2026-10-18: PowerShell steps were fenced as bash, so
+        # a reader's tools offered them to the wrong shell)
+        cmds = " ".join(s.get("command") or "" for s in deploy["steps"])
+        ps = bool(re.search(r"\$HOME\\|\$env:|Get-[A-Z]|Set-[A-Z]|Start-Process|\.ps1\b|[A-Za-z]:\\", cmds))
+        L.append("```powershell" if ps else "```bash")
         for s in deploy["steps"]:
             L.append(f"# {s.get('step','')}")
             if s.get("command"):
@@ -1694,7 +1702,7 @@ def render_release_dev(d: dict, meta: dict = None) -> str:
 
     ts = d.get("troubleshooting", [])
     if ts:
-        L.append("## Known Issues\n")
+        L.append("## Known issues\n")
         for t in ts:
             sev = t.get("severity", "?")
             defer = f" (deferred to {t['deferred_to']})" if t.get("deferred_to") else ""
@@ -1720,10 +1728,10 @@ def render_release_layman(d: dict, meta: dict = None) -> str:
 
     concept = d.get("concept", {})
     if concept.get("story"):
-        L += ["## Why This Release Exists\n", concept["story"] + "\n"]
+        L += ["## Why this release exists\n", concept["story"] + "\n"]
 
     if concept.get("before_after"):
-        L.append("## What You Will Notice\n")
+        L.append("## What you will notice\n")
         for b in concept["before_after"]:
             L.append(f"**{b.get('area','')}**")
             L.append(f"- Before: {b.get('before','')}")
@@ -1733,17 +1741,17 @@ def render_release_layman(d: dict, meta: dict = None) -> str:
             L.append("")
 
     if concept.get("deliberately_not_done"):
-        L.append("## Deliberately Not Done\n")
+        L.append("## Deliberately not done\n")
         for x in concept["deliberately_not_done"]:
             L.append(f"- **{x.get('item','')}** — {x.get('why_not','')}")
         L.append("")
 
     if d.get("privacy_and_security"):
-        L += ["## Privacy & Security\n", d["privacy_and_security"] + "\n"]
+        L += ["## Privacy and security\n", d["privacy_and_security"] + "\n"]
 
     install = d.get("install_task", {})
     if install.get("steps"):
-        L.append("## How to Install\n")
+        L.append("## How to install\n")
         prereqs = install.get("prerequisites", [])
         if prereqs:
             L.append("**Before you start:**")
@@ -1762,7 +1770,7 @@ def render_release_layman(d: dict, meta: dict = None) -> str:
 
     ts = d.get("troubleshooting", [])
     if ts:
-        L.append("## If Something Goes Wrong\n")
+        L.append("## If something goes wrong\n")
         for t in ts:
             L.append(f"**{t.get('symptom','')}**\n"
                      f"{t.get('plain_cause','')}\n"
@@ -1771,12 +1779,12 @@ def render_release_layman(d: dict, meta: dict = None) -> str:
 
     faq = d.get("faq", [])
     if faq:
-        L.append("## Common Questions\n")
+        L.append("## Common questions\n")
         for qa in faq:
             L.append(f"**Q: {qa.get('question','')}**\nA: {qa.get('answer','')}\n")
 
     if d.get("bottom_line"):
-        L += ["## Bottom Line\n", d["bottom_line"] + "\n"]
+        L += ["## Bottom line\n", d["bottom_line"] + "\n"]
 
     L.extend(render_claim_sources(d))
     L.append(TRANSPARENCY_FOOTER)
@@ -1850,7 +1858,7 @@ def _invocation() -> str:
 QUALITY_WEIGHTS = {
     "structure": 20,      # required topics present
     "evidence": 25,       # claim sources, concrete numbers
-    "organisation": 20,   # tables, headings, code blocks
+    "organization": 20,   # tables, headings, code blocks
     "separation": 15,     # tracks not collapsed into one another
     "task_orientation": 10,  # numbered steps, verification commands
     "modularity": 10,     # glossary, cross-references
@@ -1900,8 +1908,8 @@ def score_document(md: str, data: dict, required: list, track: str = "") -> tupl
     org += min(8, headings)
     if "```" in md:
         org += 4                       # at least one code block
-    got["organisation"] = (min(org, QUALITY_WEIGHTS["organisation"]),
-                           QUALITY_WEIGHTS["organisation"])
+    got["organization"] = (min(org, QUALITY_WEIGHTS["organization"]),
+                           QUALITY_WEIGHTS["organization"])
 
     # Separation: checks both directions.
     # (a) A layman document that leaks code identifiers has collapsed into the
@@ -2880,7 +2888,7 @@ def render_session_dev(d: dict, slug: str) -> str:
 
     ref = d.get("reference", {})
     if ref.get("files_changed"):
-        L += ["## Files Changed\n",
+        L += ["## Files changed\n",
               "| File | Change | What Changed | Why |",
               "|------|--------|--------------|-----|"]
         for f in ref["files_changed"]:
@@ -2888,14 +2896,14 @@ def render_session_dev(d: dict, slug: str) -> str:
                      f"{f.get('what_changed','')} | {f.get('why','')} |")
         L.append("")
     if ref.get("decisions_made"):
-        L.append("## Decisions Made\n")
+        L.append("## Decisions made\n")
         for dec in ref["decisions_made"]:
             basis = dec.get("basis", "model_inference")
             icon = "📄" if basis == "stated_in_input" else "🤖"
             L.append(f"- {icon} **{dec.get('decision','')}** — {dec.get('reason','')}")
         L.append("")
     if ref.get("tried_and_abandoned"):
-        L.append("## Tried and Abandoned\n")
+        L.append("## Tried and abandoned\n")
         for t in ref["tried_and_abandoned"]:
             L.append(f"- **{t.get('attempt','')}** — {t.get('why_abandoned','')}")
         L.append("")
@@ -2906,7 +2914,7 @@ def render_session_dev(d: dict, slug: str) -> str:
             L.append(f"- {item}")
         L.append("")
     if ref.get("open_items"):
-        L += ["## Open Items\n",
+        L += ["## Open items\n",
               "| Item | Priority | Blocks |",
               "|------|----------|--------|"]
         for o in ref["open_items"]:
@@ -2937,7 +2945,7 @@ def render_session_dev(d: dict, slug: str) -> str:
     debt = d.get("technical_debt", [])
     if debt:
         icons = {"low": "🟡", "medium": "🟠", "high": "🔴"}
-        L.append("## Technical Debt\n")
+        L.append("## Technical debt\n")
         for t in debt:
             sev = t.get("severity", "low")
             L.append(f"{icons.get(sev,'🟡')} **{sev.upper()}** — "
